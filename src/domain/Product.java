@@ -1,5 +1,6 @@
 package domain;
 
+import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
 
@@ -9,14 +10,14 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * You can't change this file at all.
+ *
  */
 public abstract class Product {
     private long id;
     private boolean idHasBeenSet = false;
     private String name;
     private String sku;
-    private Cost basePrice;
+    private double basePrice;
     private ProductGateway gateway;
 
     /**
@@ -45,22 +46,22 @@ public abstract class Product {
      * Build the entire catalog of products
      * @return
      */
-    public static List<Product> findAll() {
+    public static List<Product> findAll() throws DatabaseException {
         List<Product> domainCatalog = new ArrayList<>();
 
-        // 1. Call the data source layer to get the raw data rows
-        List<ProductGateway> rows = ProductGateway.findAllRows();
+        // TODO Call the data source layer to get the raw data rows
+        // TODO add them all to the arraylist
 
-        // 2. Map the data source rows to domain objects using our constructor map
-        for (ProductGateway row : rows) {
-            var builder = BUILDERS.get(row.getType());
-            if (builder == null) {
-                throw new IllegalStateException("Unknown product type discriminator: " + row.getType());
-            }
-            domainCatalog.add(builder.apply(row));
-        }
 
         return domainCatalog;
+    }
+
+    protected void getDataOutOfGateway(ProductGateway gateway)
+    {
+        this.id = gateway.getId();
+        this.sku = gateway.getSku();
+        this.name = gateway.getName();
+        this.basePrice = gateway.getBasePrice();
     }
 
     public void setName(String name) {
@@ -71,7 +72,7 @@ public abstract class Product {
         this.sku = sku;
     }
 
-    public void setBasePrice(Cost basePrice) {
+    public void setBasePrice(double basePrice) {
         this.basePrice = basePrice;
     }
 
@@ -91,7 +92,7 @@ public abstract class Product {
         return sku;
     }
 
-    public Cost getBasePrice() {
+    public double getBasePrice() {
         return basePrice;
     }
 

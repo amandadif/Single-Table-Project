@@ -1,5 +1,6 @@
 package domain;
 
+import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
 
@@ -7,15 +8,24 @@ import java.util.Set;
 
 public class AudioTrack extends DigitalMedia {
 
-
     private boolean hasLyrics;
     private AudioCodec codec;
 
     /**
      * finder constructor
      */
-    public AudioTrack findAudioTrack(long id) {
+    public AudioTrack findAudioTrack(long id) throws DatabaseException {
         return ProductGateway.findAndBuild(id, AudioTrack::builder);
+    }
+
+    public boolean hasLyrics()
+    {
+        return hasLyrics;
+    }
+
+    public AudioCodec getCodec()
+    {
+        return codec;
     }
 
     /**
@@ -28,11 +38,25 @@ public class AudioTrack extends DigitalMedia {
      * @param hasLyrics
      * @param codecs
      */
-    public AudioTrack(String sku, String name, Cost basePrice, long size, boolean hasLyrics, Set<AudioCodec> codecs) {
-        ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, sku, name, basePrice.dollars(),
+    public AudioTrack(String sku, String name, double basePrice, long size, boolean hasLyrics, Set<AudioCodec> codecs) throws DatabaseException {
+        ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, sku, name, basePrice,
                 size, hasLyrics, codecs, null);
         assignId(gateway.getId());
-        //TODO get the rest of our instance variables out of the gateway
+        getDataOutOfGateway(gateway);
+
+    }
+
+    protected void getDataOutOfGateway(ProductGateway gateway)
+    {
+        super.getDataOutOfGateway(gateway);
+        if (gateway.getCodecs()!=null)
+        {
+            for (AudioCodec codec : gateway.getCodecs())
+            {
+                this.codec = codec;
+            }
+        }
+        this.hasLyrics = gateway.isHasLyrics();
     }
 
     /**
@@ -46,10 +70,10 @@ public class AudioTrack extends DigitalMedia {
      * It will allow the gateway to fill in the details of audio track without knowing anything about the domain object
      * Look at how ProductGateway uses it: it only ever knows a generic T - not any specific type.
      */
-    static AudioTrack builder(ProductGateway gateway) throws DatasourceTypeMismatch{
+    public static AudioTrack builder(ProductGateway gateway) throws DatasourceTypeMismatch{
         // TODO make sure that the gateway you are given represents an audio track.  If not, throw the exception
         AudioTrack audioTrack = new AudioTrack();
-        // TODO fill in everything from the gateway
+        audioTrack.getDataOutOfGateway(gateway);
         return audioTrack;
     }
 }
