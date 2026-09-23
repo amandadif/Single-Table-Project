@@ -66,6 +66,7 @@ public class ProductGatewayTest
     @Disabled("Fix and run this only when you change the structure of the table")
     public void canCreateTable() throws DatabaseException {
         ProductGateway.createTable();
+
         try(Statement stmt = conn.createStatement())
         {
             // Create the table
@@ -85,13 +86,13 @@ public class ProductGatewayTest
         } catch(SQLException e){
             fail("SQL Exception" + e.getMessage());
         }
+
     }
 
     @Test
-    public void canInsertAndRetrieveAudioTrack() throws DatabaseException {
-          ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, "sku", "name", 2.22,
+    public void canInsertAndRetrieveAudioTrack() throws DatabaseException, SQLException {
+        ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, "sku", "name", 2.22,
                 0, false, Set.of(AudioCodec.MP3), null);
-
         // now retrieve it and make sure it has all of its stuff
         AudioTrack track = ProductGateway.findAndBuild(gateway.getId(), AudioTrack::builder);
         assertEquals("sku", track.getSku());
@@ -99,6 +100,7 @@ public class ProductGatewayTest
         assertEquals(2.22, track.getBasePrice(),0.001);
         assertFalse(track.hasLyrics());
         assertEquals(AudioCodec.MP3, track.getCodec());
+
     }
 
 
