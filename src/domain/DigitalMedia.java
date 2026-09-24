@@ -4,8 +4,6 @@ import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
 
-import java.util.Set;
-
 public class DigitalMedia extends Product{
     private long size;
 
@@ -14,6 +12,10 @@ public class DigitalMedia extends Product{
                 size, null, null, null);
         assignId(gateway.getId());
         getDataOutOfGateway(gateway);
+    }
+
+    public DigitalMedia findDigitalMedia(long id) throws DatabaseException {
+        return ProductGateway.findAndBuild(id, DigitalMedia::builder);
     }
 
     protected void getDataOutOfGateway(ProductGateway gateway)
@@ -27,23 +29,6 @@ public class DigitalMedia extends Product{
     }
 
     private DigitalMedia() {
-    }
-
-    /**
-     * Create constructor
-     *
-     * @param sku
-     * @param name
-     * @param basePrice
-     * @param size
-     * @param hasLyrics
-     * @param codecs
-     */
-    public DigitalMedia(String sku, String name, double basePrice, long size, boolean hasLyrics, Set<AudioCodec> codecs) throws DatabaseException {
-        ProductGateway gateway = new ProductGateway(ProductType.DigitalMedia, sku, name, basePrice,
-                size, hasLyrics, codecs, null);
-        assignId(gateway.getId());
-        getDataOutOfGateway(gateway);
     }
 
     public static DigitalMedia builder(ProductGateway gateway) throws DatasourceTypeMismatch{

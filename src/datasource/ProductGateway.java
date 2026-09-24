@@ -191,7 +191,7 @@ public class ProductGateway {
             pstmt.setString(1, sku);
             pstmt.setString(2, name);
             pstmt.setDouble(3, basePrice);
-            if(size != 0) {
+            if(size != null) {
                 pstmt.setLong(4, size);
             }
             else{

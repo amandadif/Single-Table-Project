@@ -36,12 +36,29 @@ public class DigitalMediaTest {
 
   @AfterEach
   public void rollback() throws SQLException {
-    //conn.rollback();
+    conn.rollback();
   }
 
   @Test
   public void createDigitalMediaObject() throws DatabaseException, SQLException {
-    DigitalMedia digitalMedia = new DigitalMedia("sku", "name", 12.99, 0);
-    conn.commit();
+    DigitalMedia digitalMedia = new DigitalMedia("sku", "name", 12.99, 1);
+    //conn.commit();
+    assertEquals("sku", digitalMedia.getSku());
+    assertEquals("name", digitalMedia.getName());
+    assertEquals(12.99, digitalMedia.getBasePrice());
+    assertEquals(1, digitalMedia.getSize());
+  }
+
+  @Test
+  public void findAndBuildDigitalMediaObject() throws DatabaseException, SQLException {
+    DigitalMedia digitalMedia = new DigitalMedia("sku", "name", 12.99, 2);
+    //conn.commit();
+
+    DigitalMedia digitalMediaCopy = digitalMedia.findDigitalMedia(digitalMedia.getId());
+
+    assertEquals(digitalMediaCopy.getSku(), digitalMedia.getSku());
+    assertEquals(digitalMedia.getName(), digitalMediaCopy.getName());
+    assertEquals(digitalMedia.getBasePrice(), digitalMediaCopy.getBasePrice());
+    assertEquals(digitalMedia.getSize(), digitalMediaCopy.getSize());
   }
 }
