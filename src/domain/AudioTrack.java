@@ -39,6 +39,7 @@ public class AudioTrack extends DigitalMedia {
      * @param codecs
      */
     public AudioTrack(String sku, String name, double basePrice, long size, boolean hasLyrics, Set<AudioCodec> codecs) throws DatabaseException {
+        super(sku, name, basePrice, size);
         ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, sku, name, basePrice,
                 size, hasLyrics, codecs, null);
         assignId(gateway.getId());
@@ -62,7 +63,8 @@ public class AudioTrack extends DigitalMedia {
     /**
      * This is used by the builder and no one else.  It doesn't need anything
      */
-    private AudioTrack() {
+    private AudioTrack() throws DatabaseException {
+        super(null, null, 0, 0);
     }
 
     /**
@@ -72,8 +74,13 @@ public class AudioTrack extends DigitalMedia {
      */
     public static AudioTrack builder(ProductGateway gateway) throws DatasourceTypeMismatch{
         // TODO make sure that the gateway you are given represents an audio track.  If not, throw the exception
-        AudioTrack audioTrack = new AudioTrack();
-        audioTrack.getDataOutOfGateway(gateway);
+      AudioTrack audioTrack = null;
+      try {
+        audioTrack = new AudioTrack();
+      } catch (DatabaseException e) {
+        throw new RuntimeException(e);
+      }
+      audioTrack.getDataOutOfGateway(gateway);
         return audioTrack;
     }
 }

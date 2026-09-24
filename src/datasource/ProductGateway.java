@@ -15,9 +15,9 @@ public class ProductGateway {
     private String sku;
     private String name;
     private double basePrice;
-    private long size;
-    private boolean hasLyrics;
-    private Set<AudioCodec> codecs;
+    private Long size = null;
+    private Boolean hasLyrics = null;
+    private Set<AudioCodec> codecs = null;
     private boolean hasSubtitles;
     private int videoResolution;
     private ArrayList<VideoStreaming> supportedStreamingServices;
@@ -34,7 +34,7 @@ public class ProductGateway {
      * @param codecs
      * @param supportedStreamingServices
      */
-    public ProductGateway(ProductType type, String sku, String name, double basePrice, long size, boolean hasLyrics, Set<AudioCodec> codecs, ArrayList<VideoStreaming> supportedStreamingServices) throws DatabaseException {
+    public ProductGateway(ProductType type, String sku, String name, double basePrice, long size, Boolean hasLyrics, Set<AudioCodec> codecs, ArrayList<VideoStreaming> supportedStreamingServices) throws DatabaseException {
         this.type = type;
         this.sku = sku;
         this.name = name;
@@ -191,9 +191,24 @@ public class ProductGateway {
             pstmt.setString(1, sku);
             pstmt.setString(2, name);
             pstmt.setDouble(3, basePrice);
-            pstmt.setLong(4, size);
-            pstmt.setBoolean(5, hasLyrics);
-            pstmt.setInt(6, calculateBitmask(codecs));
+            if(size != 0) {
+                pstmt.setLong(4, size);
+            }
+            else{
+                pstmt.setNull(4, Types.NULL);
+            }
+            if(hasLyrics != null) {
+                pstmt.setBoolean(5, hasLyrics);
+            }
+            else {
+                pstmt.setNull(5, Types.NULL);
+            }
+            if(codecs != null) {
+                pstmt.setInt(6, calculateBitmask(codecs));
+            }
+            else {
+                pstmt.setNull(6, Types.NULL);
+            }
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
