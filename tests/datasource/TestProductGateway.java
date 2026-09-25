@@ -1,3 +1,5 @@
+package datasource;
+
 import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
@@ -16,26 +18,29 @@ import static datasource.ProductType.AudioTrack;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public void main() throws DatabaseException {
-  createAudioProductIDNotZero();
-}
+public class TestProductGateway {
 
-@Test
-public void createAudioProductIDNotZero() throws DatabaseException {
-  Set<AudioCodec> emptyCodecs = EnumSet.noneOf(AudioCodec.class);
-  ArrayList<VideoStreaming> arrayListVideo = new ArrayList<>();
+  public void main() throws DatabaseException {
+    createAudioProductIDNotZero();
+  }
 
-  ProductGateway gw = new ProductGateway(AudioTrack, "1111", "Awesome Song", 13.99,
-  10, true, emptyCodecs, arrayListVideo);
+  @Test
+  public void createAudioProductIDNotZero() throws DatabaseException {
+    Set<AudioCodec> emptyCodecs = EnumSet.noneOf(AudioCodec.class);
+    ArrayList<VideoStreaming> arrayListVideo = new ArrayList<>();
 
-  assertNotEquals(0,gw.getId());
-}
+    ProductGateway gw = new ProductGateway(AudioTrack, "1111", "Awesome Song", 13.99,
+            10, true, emptyCodecs, arrayListVideo);
 
-@Test
-public void createAudioProductIDMatch() throws DatabaseException {
-  Set<AudioCodec> emptyCodecs = EnumSet.noneOf(AudioCodec.class);
-  ArrayList<VideoStreaming> arrayListVideo = new ArrayList<>();
+    assertNotEquals(0, gw.getId());
+  }
 
-  ProductGateway gw = new ProductGateway(AudioTrack, "1111", "Awesome Song", 13.99,
-          10, true, emptyCodecs, arrayListVideo);
+  @Test
+  public void createAudioProductIDMatch() throws DatabaseException {
+    Set<AudioCodec> emptyCodecs = EnumSet.noneOf(AudioCodec.class);
+    ArrayList<VideoStreaming> arrayListVideo = new ArrayList<>();
+
+    ProductGateway gw = new ProductGateway(AudioTrack, "1111", "Awesome Song", 13.99,
+            10, true, emptyCodecs, arrayListVideo);
+  }
 }

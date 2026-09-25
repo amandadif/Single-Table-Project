@@ -3,6 +3,9 @@ package datasource;
 import domain.AudioCodec;
 import domain.Product;
 import domain.VideoStreaming;
+import domain.Dimensions;
+import domain.ApparelSize;
+import domain.Voltage;
 
 import java.sql.*;
 import java.util.*;
@@ -21,6 +24,9 @@ public class ProductGateway {
     private boolean hasSubtitles;
     private int videoResolution;
     private ArrayList<VideoStreaming> supportedStreamingServices;
+    private Dimensions dimensions;
+    private ApparelSize apparelSize;
+    private Voltage voltage;
 
     /**
      * Create constructor - used to put a new object into the db
@@ -66,10 +72,74 @@ public class ProductGateway {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 getDataOutOfResultSet(rs);
+                if (this.type == ProductType.Electronics) {
+                    loadSupportedServices();
+                }
             }
         } catch (SQLException e) {
             throw new DatabaseException(e.getMessage());
         }
+    }
+
+    /**
+     * Apparel constructor
+     * @param type
+     * @param sku
+     * @param name
+     * @param basePrice
+     * @param dimensions
+     * @param apparelSize
+     * @throws DatabaseException
+     */
+    public ProductGateway(ProductType type,
+                          String sku,
+                          String name,
+                          double basePrice,
+                          Dimensions dimensions,
+                          ApparelSize apparelSize)
+            throws DatabaseException {
+
+        this.type = type;
+        this.sku = sku;
+        this.name = name;
+        this.basePrice = basePrice;
+        this.dimensions = dimensions;
+        this.apparelSize = apparelSize;
+
+        insertNewRow();
+    }
+
+    /**
+     * Electronics constructor
+     * @param type
+     * @param sku
+     * @param name
+     * @param basePrice
+     * @param dimensions
+     * @param voltage
+     * @param supportedServices
+     * @throws DatabaseException
+     */
+    public ProductGateway(ProductType type,
+                          String sku,
+                          String name,
+                          double basePrice,
+                          Dimensions dimensions,
+                          Voltage voltage,
+                          ArrayList<VideoStreaming> supportedServices)
+            throws DatabaseException {
+
+        this.type = type;
+        this.sku = sku;
+        this.name = name;
+        this.basePrice = basePrice;
+        this.dimensions = dimensions;
+        this.voltage = voltage;
+        this.supportedStreamingServices = supportedServices;
+
+        insertNewRow();
+
+        insertSupportedServices();
     }
 
     private ProductGateway() {
@@ -112,14 +182,57 @@ public class ProductGateway {
         return conn;
     }
 
-    private void getDataOutOfResultSet(ResultSet rs) throws SQLException {
+    /**
+     * This reads the "type" column first to determine which additional fields need to be reconstructed.
+     * The method also preserves NULL values for the existing DigitalMedia fields.
+     * @param rs
+     * @throws SQLException
+     */
+    private void getDataOutOfResultSet(ResultSet rs)
+            throws SQLException {
+
         this.id = rs.getLong("id");
+        this.type = ProductType.values()[
+                rs.getInt("type")
+                ];
+
         this.sku = rs.getString("sku");
         this.name = rs.getString("name");
         this.basePrice = rs.getDouble("basePrice");
-        this.size = rs.getLong("size");
-        this.hasLyrics = rs.getBoolean("hasLyrics");
-        this.codecs = getSupportedCodecsSet(rs.getInt("codecs"));
+
+        // DigitalMedia
+        long storedSize = rs.getLong("size");
+        this.size = rs.wasNull() ? null : storedSize;
+        boolean storedLyrics = rs.getBoolean("hasLyrics");
+        this.hasLyrics =
+                rs.wasNull() ? null : storedLyrics;
+
+        int storedCodecs = rs.getInt("codecs");
+        this.codecs = rs.wasNull()
+                ? null
+                : getSupportedCodecsSet(storedCodecs);
+
+        // PhysicalProduct
+        if (type == ProductType.Apparel ||
+                type == ProductType.Electronics) {
+            this.dimensions = new Dimensions(
+                    rs.getDouble("dimensionWidth"),
+                    rs.getDouble("dimensionDepth"),
+                    rs.getDouble("dimensionHeight")
+            );
+        }
+        // Apparel
+        if (type == ProductType.Apparel) {
+            this.apparelSize = ApparelSize.values()[
+                    rs.getInt("apparelSize")
+                    ];
+        }
+        // Electronics
+        if (type == ProductType.Electronics) {
+            this.voltage = Voltage.values()[
+                    rs.getInt("voltage")
+                    ];
+        }
     }
 
     int calculateBitmask(Set<AudioCodec> codecs) {
@@ -157,6 +270,27 @@ public class ProductGateway {
         return sku;
     }
 
+
+    public double getDimensionWidth() {
+        return dimensions.getWidth();
+    }
+
+    public double getDimensionDepth() {
+        return dimensions.getDepth();
+    }
+
+    public double getDimensionHeight() {
+        return dimensions.getHeight();
+    }
+
+    public ApparelSize getApparelSize() {
+        return apparelSize;
+    }
+
+    public Voltage getVoltage() {
+        return voltage;
+    }
+
     private Set<AudioCodec> getSupportedCodecsSet(int mask) {
         Set<AudioCodec> codecs = new java.util.HashSet<>();
 
@@ -182,43 +316,164 @@ public class ProductGateway {
         return videoResolution;
     }
 
+
+    /**
+     * When you create an Apparel object, the gateway stores:
+     * - The common Product fields.
+     * - The Apparel product type.
+     * - The three dimension values.
+     * - The ApparelSize integer.
+     * The DigitalMedia and Electronics-specific fields remain NULL
+     * When you create Electronics, the same method stores the Electronics fields instead.
+     * @throws DatabaseException
+     */
     private void insertNewRow() throws DatabaseException {
-        String sql = "INSERT INTO products (sku, name, basePrice, size, hasLyrics, codecs) " +
-                "VALUES (?, ?, ?, ?, ?, ?);";
+
+        String sql = """
+        INSERT INTO products (
+            type,
+            sku,
+            name,
+            basePrice,
+            size,
+            hasLyrics,
+            codecs,
+            dimensionWidth,
+            dimensionDepth,
+            dimensionHeight,
+            apparelSize,
+            voltage
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """;
 
         Connection conn = getConnection();
+
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, sku);
-            pstmt.setString(2, name);
-            pstmt.setDouble(3, basePrice);
-            if(size != null) {
-                pstmt.setLong(4, size);
+            pstmt.setInt(1, type.ordinal());
+            pstmt.setString(2, sku);
+            pstmt.setString(3, name);
+            pstmt.setDouble(4, basePrice);
+
+            // DigitalMedia size
+            if (size != null) {
+                pstmt.setLong(5, size);
+            } else {
+                pstmt.setNull(5, Types.INTEGER);
             }
-            else{
-                pstmt.setNull(4, Types.NULL);
+            // AudioTrack hasLyrics
+            if (hasLyrics != null) {
+                pstmt.setBoolean(6, hasLyrics);
+            } else {
+                pstmt.setNull(6, Types.BOOLEAN);
             }
-            if(hasLyrics != null) {
-                pstmt.setBoolean(5, hasLyrics);
+            // Audio codecs
+            if (codecs != null) {
+                pstmt.setInt(7, calculateBitmask(codecs));
+            } else {
+                pstmt.setNull(7, Types.INTEGER);
             }
-            else {
-                pstmt.setNull(5, Types.NULL);
-            }
-            if(codecs != null) {
-                pstmt.setInt(6, calculateBitmask(codecs));
-            }
-            else {
-                pstmt.setNull(6, Types.NULL);
+            // PhysicalProduct dimensions
+            if (dimensions != null) {
+                pstmt.setDouble(8, dimensions.getWidth());
+                pstmt.setDouble(9, dimensions.getDepth());
+                pstmt.setDouble(10, dimensions.getHeight());
+            } else {
+                pstmt.setNull(8, Types.DOUBLE);
+                pstmt.setNull(9, Types.DOUBLE);
+                pstmt.setNull(10, Types.DOUBLE);
             }
 
+            // Apparel size
+            if (apparelSize != null) {
+                pstmt.setInt(11, apparelSize.ordinal());
+            } else {
+                pstmt.setNull(11, Types.INTEGER);
+            }
+            // Electronics voltage
+            if (voltage != null) {
+                pstmt.setInt(12, voltage.ordinal());
+            } else {
+                pstmt.setNull(12, Types.INTEGER);
+            }
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                try (ResultSet generatedKeys =
+                             pstmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         this.id = generatedKeys.getLong(1);
                     }
                 }
             }
-            assert !conn.isClosed();
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+    /**
+     * This method inserts one relationship row for every supported VideoStreaming service.
+     * It assumes each VideoStreaming object has already been saved and has a valid database ID.
+     * @throws DatabaseException
+     */
+    private void insertSupportedServices() throws DatabaseException {
+
+        if (supportedStreamingServices == null) {
+            return;
+        }
+
+        String sql = """
+        INSERT INTO ELECTRONICS_SUPPORTED_SERVICE
+        (electronicsID, videoStreamingID)
+        VALUES (?, ?);
+        """;
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (VideoStreaming service : supportedStreamingServices) {
+                pstmt.setLong(1, this.id);
+                pstmt.setLong(2, service.getId());
+                pstmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+    /**
+     * gotta complete VideoStreaming.builder(). The version currently returns null,
+     * so retrieving actual supported services will not work correctly until that method is implemented
+     * @throws DatabaseException
+     */
+    private void loadSupportedServices()
+            throws DatabaseException {
+
+        supportedStreamingServices = new ArrayList<>();
+
+        String sql = """
+        SELECT videoStreamingID
+        FROM ELECTRONICS_SUPPORTED_SERVICE
+        WHERE electronicsID = ?;
+        """;
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, this.id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    long serviceId =
+                            rs.getLong("videoStreamingID");
+
+                    VideoStreaming service =
+                            ProductGateway.findAndBuild(
+                                    serviceId,
+                                    VideoStreaming::builder
+                            );
+                    supportedStreamingServices.add(service);
+                }
+            }
         } catch (SQLException e) {
             throw new DatabaseException(e.getMessage());
         }
