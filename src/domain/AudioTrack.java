@@ -4,12 +4,10 @@ import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
 
-import java.util.Set;
-
 public class AudioTrack extends DigitalMedia {
 
-    private boolean hasLyrics;
-    private AudioCodec codec;
+    private Boolean hasLyrics;
+    private AudioCodec singleCodec;
 
     /**
      * finder constructor
@@ -18,14 +16,14 @@ public class AudioTrack extends DigitalMedia {
         return ProductGateway.findAndBuild(id, AudioTrack::builder);
     }
 
-    public boolean hasLyrics()
+    public Boolean hasLyrics()
     {
         return hasLyrics;
     }
 
-    public AudioCodec getCodec()
+    public AudioCodec getSingleCodec()
     {
-        return codec;
+        return singleCodec;
     }
 
     /**
@@ -36,12 +34,12 @@ public class AudioTrack extends DigitalMedia {
      * @param basePrice
      * @param size
      * @param hasLyrics
-     * @param codecs
+     * @param singleCodec
      */
-    public AudioTrack(String sku, String name, double basePrice, long size, boolean hasLyrics, Set<AudioCodec> codecs) throws DatabaseException {
+    public AudioTrack(String sku, String name, double basePrice, long size, Boolean hasLyrics, AudioCodec singleCodec) throws DatabaseException {
         super(sku, name, basePrice, size);
         ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, sku, name, basePrice,
-                size, hasLyrics, codecs, null);
+                size, hasLyrics, singleCodec, null, null, null);
         assignId(gateway.getId());
         getDataOutOfGateway(gateway);
 
@@ -50,6 +48,8 @@ public class AudioTrack extends DigitalMedia {
     protected void getDataOutOfGateway(ProductGateway gateway)
     {
         super.getDataOutOfGateway(gateway);
+        this.singleCodec = gateway.getSingleCodec();
+        /*
         if (gateway.getCodecs()!=null)
         {
             for (AudioCodec codec : gateway.getCodecs())
@@ -57,6 +57,7 @@ public class AudioTrack extends DigitalMedia {
                 this.codec = codec;
             }
         }
+         */
         this.hasLyrics = gateway.isHasLyrics();
     }
 

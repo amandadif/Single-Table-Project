@@ -1,11 +1,6 @@
 package datasource;
 
-import domain.AudioCodec;
-import domain.Product;
-import domain.VideoStreaming;
-import domain.Dimensions;
-import domain.ApparelSize;
-import domain.Voltage;
+import domain.*;
 
 import java.sql.*;
 import java.util.*;
@@ -20,8 +15,9 @@ public class ProductGateway {
     private double basePrice;
     private Long size = null;
     private Boolean hasLyrics = null;
+    private AudioCodec singleCodec = null;
     private Set<AudioCodec> codecs = null;
-    private boolean hasSubtitles;
+    private Boolean hasSubtitles;
     private int videoResolution;
     private ArrayList<VideoStreaming> supportedStreamingServices;
     private Dimensions dimensions;
@@ -39,14 +35,17 @@ public class ProductGateway {
      * @param hasLyrics
      * @param codecs
      * @param supportedStreamingServices
+     * @param hasSubtitles
      */
-    public ProductGateway(ProductType type, String sku, String name, double basePrice, long size, Boolean hasLyrics, Set<AudioCodec> codecs, ArrayList<VideoStreaming> supportedStreamingServices) throws DatabaseException {
+    public ProductGateway(ProductType type, String sku, String name, double basePrice, long size, Boolean hasLyrics, AudioCodec singleCodec, Set<AudioCodec> codecs, ArrayList<VideoStreaming> supportedStreamingServices, Boolean hasSubtitles) throws DatabaseException {
         this.type = type;
         this.sku = sku;
         this.name = name;
         this.basePrice = basePrice;
         this.size = size;
         this.hasLyrics = hasLyrics;
+        this.hasSubtitles = hasSubtitles;
+        this.singleCodec = singleCodec;
         this.codecs = codecs;
         this.supportedStreamingServices = supportedStreamingServices;
 
@@ -148,8 +147,25 @@ public class ProductGateway {
 
     static void createTable() throws DatabaseException {
 
-        String sql = "CREATE TABLE IF NOT EXISTS products (" + " id INTEGER PRIMARY KEY AUTOINCREMENT," + " sku TEXT," + " name TEXT," + " basePrice DOUBLE," + " size INTEGER," + " hasLyrics BOOLEAN," + " codecs INTEGER" + ");";
-
+        String sql = """
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type INTEGER,
+            sku TEXT,
+            name TEXT,
+            basePrice DOUBLE,
+            size INTEGER,
+            hasLyrics BOOLEAN,
+            hasSubtitles BOOLEAN,
+            singleCodec INTEGER,
+            codecs INTEGER,
+            dimensionWidth DOUBLE,
+            dimensionDepth DOUBLE,
+            dimensionHeight DOUBLE,
+            apparelSize INTEGER,
+            voltage INTEGER
+        );
+        """;
         // Establish connection and execute statement
         Connection conn = getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -203,9 +219,18 @@ public class ProductGateway {
         // DigitalMedia
         long storedSize = rs.getLong("size");
         this.size = rs.wasNull() ? null : storedSize;
-        boolean storedLyrics = rs.getBoolean("hasLyrics");
+        Boolean storedLyrics = rs.getBoolean("hasLyrics");
         this.hasLyrics =
                 rs.wasNull() ? null : storedLyrics;
+
+        Boolean storedSubtitles = rs.getBoolean("hasSubtitles");
+        this.hasSubtitles =
+                rs.wasNull() ? null : storedSubtitles;
+
+        int storedSingleCodec = rs.getInt("singleCodec");
+        this.singleCodec = rs.wasNull()
+                ? null
+                : AudioCodec.values()[storedSingleCodec];
 
         int storedCodecs = rs.getInt("codecs");
         this.codecs = rs.wasNull()
@@ -316,6 +341,10 @@ public class ProductGateway {
         return videoResolution;
     }
 
+    public AudioCodec getSingleCodec() {
+        return singleCodec;
+    }
+
 
     /**
      * When you create an Apparel object, the gateway stores:
@@ -337,6 +366,8 @@ public class ProductGateway {
             basePrice,
             size,
             hasLyrics,
+            hasSubtitles,
+            singleCodec,
             codecs,
             dimensionWidth,
             dimensionDepth,
@@ -344,7 +375,7 @@ public class ProductGateway {
             apparelSize,
             voltage
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """;
 
         Connection conn = getConnection();
@@ -367,34 +398,46 @@ public class ProductGateway {
             } else {
                 pstmt.setNull(6, Types.BOOLEAN);
             }
+            // Video Streaming hasSubtitles
+            if (hasSubtitles != null) {
+                pstmt.setBoolean(7, hasSubtitles);
+            } else {
+                pstmt.setNull(7, Types.BOOLEAN);
+            }
+            // Single Audio Codec
+            if (singleCodec != null) {
+                pstmt.setInt(8, singleCodec.ordinal());
+            } else {
+                pstmt.setNull(8, Types.INTEGER);
+            }
             // Audio codecs
             if (codecs != null) {
-                pstmt.setInt(7, calculateBitmask(codecs));
+                pstmt.setInt(9, calculateBitmask(codecs));
             } else {
-                pstmt.setNull(7, Types.INTEGER);
+                pstmt.setNull(9, Types.INTEGER);
             }
             // PhysicalProduct dimensions
             if (dimensions != null) {
-                pstmt.setDouble(8, dimensions.getWidth());
-                pstmt.setDouble(9, dimensions.getDepth());
-                pstmt.setDouble(10, dimensions.getHeight());
+                pstmt.setDouble(10, dimensions.getWidth());
+                pstmt.setDouble(11, dimensions.getDepth());
+                pstmt.setDouble(12, dimensions.getHeight());
             } else {
-                pstmt.setNull(8, Types.DOUBLE);
-                pstmt.setNull(9, Types.DOUBLE);
                 pstmt.setNull(10, Types.DOUBLE);
+                pstmt.setNull(11, Types.DOUBLE);
+                pstmt.setNull(12, Types.DOUBLE);
             }
 
             // Apparel size
             if (apparelSize != null) {
-                pstmt.setInt(11, apparelSize.ordinal());
+                pstmt.setInt(13, apparelSize.ordinal());
             } else {
-                pstmt.setNull(11, Types.INTEGER);
+                pstmt.setNull(13, Types.INTEGER);
             }
             // Electronics voltage
             if (voltage != null) {
-                pstmt.setInt(12, voltage.ordinal());
+                pstmt.setInt(14, voltage.ordinal());
             } else {
-                pstmt.setNull(12, Types.INTEGER);
+                pstmt.setNull(14, Types.INTEGER);
             }
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
@@ -479,11 +522,11 @@ public class ProductGateway {
         }
     }
 
-    public boolean isHasLyrics() {
+    public Boolean isHasLyrics() {
         return hasLyrics;
     }
 
-    public boolean isHasSubtitles() {
+    public Boolean isHasSubtitles() {
         return hasSubtitles;
     }
 }

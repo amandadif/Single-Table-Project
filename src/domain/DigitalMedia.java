@@ -8,10 +8,8 @@ public class DigitalMedia extends Product{
     private long size;
 
     public DigitalMedia(String sku, String name, double basePrice, long size) throws DatabaseException {
-        ProductGateway gateway = new ProductGateway(ProductType.DigitalMedia, sku, name, basePrice,
-                size, null, null, null);
-        assignId(gateway.getId());
-        getDataOutOfGateway(gateway);
+        super();
+        this.size = size;
     }
 
     public DigitalMedia findDigitalMedia(long id) throws DatabaseException {
