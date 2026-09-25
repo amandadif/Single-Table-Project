@@ -37,8 +37,21 @@ public class VideoStreaming extends DigitalMedia { // Or a component/subclass
      */
     public VideoStreaming(String sku, String name, double basePrice, long size, Boolean hasSubtitles, Set<AudioCodec> codecs) throws DatabaseException {
         super(sku, name, basePrice, size);
-        ProductGateway gateway = new ProductGateway(ProductType.VideoStreaming, sku, name, basePrice,
-                size, null, null, codecs, null, null);
+        ProductGateway gateway = new ProductGateway(
+                ProductType.VideoStreaming,
+                sku,
+                name,
+                basePrice,
+                size,
+                null,       // hasLyrics
+                null,       // singleCodec
+                codecs,
+                hasSubtitles,
+                null,       // dimensions
+                null,       // apparelSize
+                null,       // voltage
+                null        // supportedStreamingServices
+        );
         assignId(gateway.getId());
         getDataOutOfGateway(gateway);
 

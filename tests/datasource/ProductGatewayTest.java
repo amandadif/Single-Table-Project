@@ -42,23 +42,33 @@ public class ProductGatewayTest
 
     @Test
     public void SingleCodecBitmaskTest() throws DatabaseException {
+        ProductGateway gateway = new ProductGateway(
+                ProductType.VideoStreaming,
+                "V001",
+                "Test Video",
+                2.22,
+                0L,
+                null,
+                null,
+                Set.of(AudioCodec.MP3),
+                false,
+                null,
+                null,
+                null,
+                null
+        );
+
         Set<AudioCodec> codecs = Set.of(AudioCodec.MP3);
-        ProductGateway gateway = new ProductGateway(ProductType.AudioTrack, "sku", "name", 2.22, 0, false, null, codecs, null, null);
-        int expectedBitmask = 1;
-        int actualBitmask = gateway.calculateBitmask(codecs);
-        assertEquals(expectedBitmask, actualBitmask);
+        assertEquals(1, gateway.calculateBitmask(codecs));
+
         codecs = Set.of(AudioCodec.AAC);
-        expectedBitmask = 2;
-        actualBitmask = gateway.calculateBitmask(codecs);
-        assertEquals(expectedBitmask, actualBitmask);
+        assertEquals(2, gateway.calculateBitmask(codecs));
+
         codecs = Set.of(AudioCodec.FLAC);
-        expectedBitmask = 4;
-        actualBitmask = gateway.calculateBitmask(codecs);
-        assertEquals(expectedBitmask, actualBitmask);
+        assertEquals(4, gateway.calculateBitmask(codecs));
+
         codecs = Set.of(AudioCodec.WAV);
-        expectedBitmask = 8;
-        actualBitmask = gateway.calculateBitmask(codecs);
-        assertEquals(expectedBitmask, actualBitmask);
+        assertEquals(8, gateway.calculateBitmask(codecs));
     }
 
     @Test

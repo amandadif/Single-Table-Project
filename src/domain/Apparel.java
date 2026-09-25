@@ -32,8 +32,15 @@ public class Apparel extends PhysicalProduct {
             sku,
             name,
             basePrice,
+            null,       // size
+            null,       // hasLyrics
+            null,       // singleCodec
+            null,       // codecs
+            null,       // hasSubtitles
             dimensions,
-            size
+            size,
+            null,       // voltage
+            null        // supportedStreamingServices
     );
     assignId(gateway.getId());
     getDataOutOfGateway(gateway);

@@ -33,7 +33,13 @@ public class Electronics extends PhysicalProduct {
             sku,
             name,
             basePrice,
+            null,       // size
+            null,       // hasLyrics
+            null,       // singleCodec
+            null,       // codecs
+            null,       // hasSubtitles
             dimensions,
+            null,       // apparelSize
             voltage,
             supportedServices
     );
