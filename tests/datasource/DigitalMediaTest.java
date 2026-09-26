@@ -3,21 +3,21 @@ package datasource;
 import domain.AudioCodec;
 import domain.AudioTrack;
 import domain.DigitalMedia;
+import domain.VideoStreaming;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DigitalMediaTest {
   private static final Connection conn;
+
 
   static {
     try {
@@ -40,25 +40,68 @@ public class DigitalMediaTest {
   }
 
   @Test
-  public void createDigitalMediaObject() throws DatabaseException, SQLException {
-    DigitalMedia digitalMedia = new DigitalMedia("sku", "name", 12.99, 1);
+  public void createAudioTrackObject() throws DatabaseException, SQLException {
+    AudioTrack audioTrack = new AudioTrack("12345", "Amanda", 499.99, 1, true, AudioCodec.WAV);
     //conn.commit();
-    assertEquals("sku", digitalMedia.getSku());
-    assertEquals("name", digitalMedia.getName());
-    assertEquals(12.99, digitalMedia.getBasePrice());
-    assertEquals(1, digitalMedia.getSize());
+    ProductGateway gateway = audioTrack.getGateway();
+    assertEquals("12345", audioTrack.getSku());
+    assertEquals("Amanda", audioTrack.getName());
+    assertEquals(499.99, audioTrack.getBasePrice());
+    assertEquals(1, audioTrack.getSize());
+    assertEquals(true, audioTrack.hasLyrics());
+    assertEquals(AudioCodec.WAV, audioTrack.getSingleCodec());
+
+    //Test finding an audiotrack
+    assertEquals(audioTrack.getSku(), gateway.findAndBuild(audioTrack.getId(),VideoStreaming::builder).getSku());
+    assertEquals(audioTrack.getBasePrice(), gateway.findAndBuild(audioTrack.getId(),VideoStreaming::builder).getBasePrice());
   }
 
   @Test
-  public void findAndBuildDigitalMediaObject() throws DatabaseException, SQLException {
-    DigitalMedia digitalMedia = new DigitalMedia("sku", "name", 12.99, 2);
+  public void createVideoStreamingObject() throws DatabaseException, SQLException {
+    Set<AudioCodec> audioCodecs = Set.of(AudioCodec.MP3, AudioCodec.AAC);
+    VideoStreaming videoStreaming = new VideoStreaming("54321", "VideoStream", 399.99, 10, false, audioCodecs);
     //conn.commit();
+    ProductGateway gateway = videoStreaming.getGateway();
+    assertEquals("54321", videoStreaming.getSku());
+    assertEquals("VideoStream", videoStreaming.getName());
+    assertEquals(399.99, videoStreaming.getBasePrice());
+    assertEquals(10, videoStreaming.getSize());
+    assertEquals(false, videoStreaming.getHasSubtitles());
+    assertEquals(3, gateway.calculateBitmask(videoStreaming.getSupportedCodecs()));
 
-    DigitalMedia digitalMediaCopy = digitalMedia.findDigitalMedia(digitalMedia.getId());
+    //Test finding VideoStreaming object
+    assertEquals(videoStreaming.getSku(), gateway.findAndBuild(videoStreaming.getId(),VideoStreaming::builder).getSku());
+    assertEquals(videoStreaming.getBasePrice(), gateway.findAndBuild(videoStreaming.getId(),VideoStreaming::builder).getBasePrice());
+  }
 
-    assertEquals(digitalMediaCopy.getSku(), digitalMedia.getSku());
-    assertEquals(digitalMedia.getName(), digitalMediaCopy.getName());
-    assertEquals(digitalMedia.getBasePrice(), digitalMediaCopy.getBasePrice());
-    assertEquals(digitalMedia.getSize(), digitalMediaCopy.getSize());
+  @Test
+  public void videoStreamingCodecsBitmaskTest() throws DatabaseException {
+    ProductGateway gateway = new ProductGateway(
+            ProductType.VideoStreaming,
+            "V001",
+            "Test Video",
+            2.22,
+            0L,
+            null,
+            null,
+            Set.of(AudioCodec.MP3),
+            false,
+            null,
+            null,
+            null,
+            null
+    );
+
+    Set<AudioCodec> codecs = Set.of(AudioCodec.MP3);
+    assertEquals(1, gateway.calculateBitmask(codecs));
+
+    codecs = Set.of(AudioCodec.AAC);
+    assertEquals(2, gateway.calculateBitmask(codecs));
+
+    codecs = Set.of(AudioCodec.FLAC);
+    assertEquals(4, gateway.calculateBitmask(codecs));
+
+    codecs = Set.of(AudioCodec.WAV);
+    assertEquals(8, gateway.calculateBitmask(codecs));
   }
 }

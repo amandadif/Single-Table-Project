@@ -78,66 +78,7 @@ public class ProductGateway {
         }
     }
 
-    /**
-     * Apparel constructor
-     * @param type
-     * @param sku
-     * @param name
-     * @param basePrice
-     * @param dimensions
-     * @param apparelSize
-     * @throws DatabaseException
-     */
-    public ProductGateway(ProductType type,
-                          String sku,
-                          String name,
-                          double basePrice,
-                          Dimensions dimensions,
-                          ApparelSize apparelSize)
-            throws DatabaseException {
 
-        this.type = type;
-        this.sku = sku;
-        this.name = name;
-        this.basePrice = basePrice;
-        this.dimensions = dimensions;
-        this.apparelSize = apparelSize;
-
-        insertNewRow();
-    }
-
-    /**
-     * Electronics constructor
-     * @param type
-     * @param sku
-     * @param name
-     * @param basePrice
-     * @param dimensions
-     * @param voltage
-     * @param supportedServices
-     * @throws DatabaseException
-     */
-    public ProductGateway(ProductType type,
-                          String sku,
-                          String name,
-                          double basePrice,
-                          Dimensions dimensions,
-                          Voltage voltage,
-                          ArrayList<VideoStreaming> supportedServices)
-            throws DatabaseException {
-
-        this.type = type;
-        this.sku = sku;
-        this.name = name;
-        this.basePrice = basePrice;
-        this.dimensions = dimensions;
-        this.voltage = voltage;
-        this.supportedStreamingServices = supportedServices;
-
-        insertNewRow();
-
-        insertSupportedServices();
-    }
 
     private ProductGateway() {
         // Used to have empty gateways that we fill in incrementally
@@ -187,10 +128,40 @@ public class ProductGateway {
         }
     }
 
-     public static List<Product> findAllRows(Map<ProductType, Function<ProductGateway, ? extends Product>> builders) throws DatabaseException {
+    public static List<Product> findAllRows(
+            Map<ProductType, Function<ProductGateway, ? extends Product>> builders)
+            throws DatabaseException {
+
         List<Product> products = new ArrayList<>();
 
-        // find and build them all here
+        String sql = "SELECT * FROM products";
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+
+                ProductGateway gateway = new ProductGateway();
+
+                gateway.getDataOutOfResultSet(rs);
+
+                if (gateway.getType() == ProductType.Electronics) {
+                    gateway.loadSupportedServices();
+                }
+
+                Function<ProductGateway, ? extends Product> builder =
+                        builders.get(gateway.getType());
+
+                Product product = builder.apply(gateway);
+
+                products.add(product);
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
 
         return products;
     }
@@ -532,6 +503,171 @@ public class ProductGateway {
         } catch (SQLException e) {
             throw new DatabaseException(e.getMessage());
         }
+    }
+
+    public static List<ProductGateway> findBySkuPrefix(String prefix)
+            throws DatabaseException {
+
+        List<ProductGateway> gateways = new ArrayList<>();
+
+        String sql = "SELECT id FROM products WHERE sku LIKE ?";
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, prefix + "%");
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                while (rs.next()) {
+                    gateways.add(new ProductGateway(rs.getLong("id")));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+
+        return gateways;
+    }
+
+
+    public static List<AudioTrack> findTracksWithLyrics(
+            Function<ProductGateway, AudioTrack> domainBuilder)
+            throws DatabaseException {
+
+        List<AudioTrack> tracks = new ArrayList<>();
+
+        String sql = """
+        SELECT id
+        FROM products
+        WHERE type = ?
+        AND hasLyrics = ?
+        """;
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, ProductType.AudioTrack.ordinal());
+            pstmt.setBoolean(2, true);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                while (rs.next()) {
+                    ProductGateway gateway =
+                            new ProductGateway(rs.getLong("id"));
+
+                    tracks.add(domainBuilder.apply(gateway));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+
+        return tracks;
+    }
+
+
+    public static List<Apparel> findApparelWithSize(
+            int size,
+            Function<ProductGateway, Apparel> domainBuilder)
+            throws DatabaseException {
+
+        List<Apparel> apparel = new ArrayList<>();
+
+        String sql = """
+        SELECT id
+        FROM products
+        WHERE type = ?
+        AND apparelSize = ?
+        """;
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, ProductType.Apparel.ordinal());
+            pstmt.setInt(2, size);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                while (rs.next()) {
+                    ProductGateway gateway =
+                            new ProductGateway(rs.getLong("id"));
+
+                    apparel.add(domainBuilder.apply(gateway));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+
+        return apparel;
+    }
+
+
+    public static List<Electronics> findAllThatSupport(
+            int videoStreamingId,
+            Function<ProductGateway, Electronics> domainBuilder)
+            throws DatabaseException , InvalidArgumentException{
+
+        List<Electronics> electronics = new ArrayList<>();
+
+        String checkSql = """
+        SELECT type
+        FROM products
+        WHERE id = ?
+        """;
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement checkStmt =
+                     conn.prepareStatement(checkSql)) {
+
+            checkStmt.setLong(1, videoStreamingId);
+
+            try (ResultSet rs = checkStmt.executeQuery()) {
+
+                if (!rs.next() ||
+                        rs.getInt("type") != ProductType.VideoStreaming.ordinal()) {
+                    throw new InvalidArgumentException(
+                            "ID is not a VideoStreaming product");
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+
+        String sql = """
+        SELECT electronicsID
+        FROM ELECTRONICS_SUPPORTED_SERVICE
+        WHERE videoStreamingID = ?
+        """;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setLong(1, videoStreamingId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                while (rs.next()) {
+                    ProductGateway gateway =
+                            new ProductGateway(rs.getLong("electronicsID"));
+
+                    electronics.add(domainBuilder.apply(gateway));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+
+        return electronics;
     }
 
     public Boolean isHasLyrics() {

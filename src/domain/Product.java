@@ -38,7 +38,12 @@ public abstract class Product {
 
     // This is a map of builders that will let us create domain objects
     private static final Map<ProductType, Function<ProductGateway, ? extends Product>> BUILDERS = Map.of(
-            ProductType.AudioTrack, AudioTrack::builder
+            ProductType.AudioTrack, AudioTrack::builder,
+            ProductType.VideoStreaming, VideoStreaming::builder,
+            ProductType.Apparel, Apparel::builder,
+            ProductType.Electronics, Electronics::builder
+
+
             // TODO: append others here as they are built
     );
 
@@ -47,13 +52,9 @@ public abstract class Product {
      * @return
      */
     public static List<Product> findAll() throws DatabaseException {
-        List<Product> domainCatalog = new ArrayList<>();
+        //List<Product> domainCatalog = new ArrayList<>();
 
-        // TODO Call the data source layer to get the raw data rows
-        // TODO add them all to the arraylist
-
-
-        return domainCatalog;
+        return ProductGateway.findAllRows(BUILDERS);
     }
 
     protected void getDataOutOfGateway(ProductGateway gateway)
@@ -62,7 +63,10 @@ public abstract class Product {
         this.sku = gateway.getSku();
         this.name = gateway.getName();
         this.basePrice = gateway.getBasePrice();
+        this.gateway = gateway;
     }
+
+
 
     public void setName(String name) {
         this.name = name;

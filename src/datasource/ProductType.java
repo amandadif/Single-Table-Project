@@ -8,7 +8,5 @@ public enum ProductType {
     VideoStreaming,
     AudioTrack,
     Apparel,
-    Electronics,
-    DigitalMedia,
-    // TODO you need the whole list of concrete types here
+    Electronics
 }

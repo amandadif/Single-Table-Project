@@ -62,15 +62,6 @@ public class AudioTrack extends DigitalMedia {
     {
         super.getDataOutOfGateway(gateway);
         this.singleCodec = gateway.getSingleCodec();
-        /*
-        if (gateway.getCodecs()!=null)
-        {
-            for (AudioCodec codec : gateway.getCodecs())
-            {
-                this.codec = codec;
-            }
-        }
-         */
         this.hasLyrics = gateway.isHasLyrics();
     }
 

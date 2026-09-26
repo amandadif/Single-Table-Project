@@ -4,10 +4,11 @@ import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class VideoStreaming extends DigitalMedia { // Or a component/subclass
-    private AudioCodec supportedCodecs;
+    private Set<AudioCodec> supportedCodecs;
     private Boolean hasSubtitles; // Put the enum field right here!
 
 
@@ -20,7 +21,7 @@ public class VideoStreaming extends DigitalMedia { // Or a component/subclass
         return hasSubtitles;
     }
 
-    public AudioCodec getSupportedCodecs()
+    public Set<AudioCodec> getSupportedCodecs()
     {
         return supportedCodecs;
     }
@@ -60,6 +61,8 @@ public class VideoStreaming extends DigitalMedia { // Or a component/subclass
     protected void getDataOutOfGateway(ProductGateway gateway)
     {
         super.getDataOutOfGateway(gateway);
+        this.supportedCodecs = gateway.getCodecs();
+        /*
         if (gateway.getCodecs()!=null)
         {
             for (AudioCodec supportedCodecs : gateway.getCodecs())
@@ -67,6 +70,7 @@ public class VideoStreaming extends DigitalMedia { // Or a component/subclass
                 this.supportedCodecs = supportedCodecs;
             }
         }
+         */
         this.hasSubtitles = gateway.isHasSubtitles();
     }
 
