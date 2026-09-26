@@ -3,6 +3,9 @@ package domain;
 import datasource.DatabaseException;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PhysicalProductTest {
@@ -148,5 +151,119 @@ public class PhysicalProductTest {
             electronics.getDimensions().getWidth(),
             copy.getDimensions().getWidth()
     );
+  }
+
+  @Test
+  void electronicsCanSupportOneVideoStreamingService()
+          throws Exception {
+
+    VideoStreaming service =
+            new VideoStreaming(
+                    "VS-SERVICE-1",
+                    "Streaming Service 1",
+                    10,
+                    1000,
+                    true,
+                    Set.of(AudioCodec.values()[0])
+            );
+
+    ArrayList<VideoStreaming> services =
+            new ArrayList<>();
+
+    services.add(service);
+
+    Electronics electronics =
+            new Electronics(
+                    "ELEC-SERVICE-1",
+                    "Smart TV",
+                    500,
+                    new Dimensions(10, 20, 30),
+                    Voltage.V_110,
+                    services
+            );
+
+    Electronics found =
+            Electronics.findElectronics(
+                    electronics.getId()
+            );
+
+    assertNotNull(found.getSupportedServices());
+
+    assertEquals(
+            1,
+            found.getSupportedServices().size()
+    );
+
+    assertEquals(
+            service.getId(),
+            found.getSupportedServices()
+                    .get(0)
+                    .getId()
+    );
+  }
+
+
+  @Test
+  void electronicsCanSupportMultipleVideoStreamingServices()
+          throws Exception {
+
+    VideoStreaming service1 =
+            new VideoStreaming(
+                    "VS-MULTI-1",
+                    "Service 1",
+                    10,
+                    1000,
+                    true,
+                    Set.of(AudioCodec.values()[0])
+            );
+
+    VideoStreaming service2 =
+            new VideoStreaming(
+                    "VS-MULTI-2",
+                    "Service 2",
+                    15,
+                    2000,
+                    false,
+                    Set.of(AudioCodec.values()[0])
+            );
+
+    ArrayList<VideoStreaming> services =
+            new ArrayList<>();
+
+    services.add(service1);
+    services.add(service2);
+
+    Electronics electronics =
+            new Electronics(
+                    "ELEC-MULTI",
+                    "Smart TV",
+                    500,
+                    new Dimensions(10, 20, 30),
+                    Voltage.V_110,
+                    services
+            );
+
+    Electronics found =
+            Electronics.findElectronics(
+                    electronics.getId()
+            );
+
+    assertNotNull(found.getSupportedServices());
+
+    assertEquals(
+            2,
+            found.getSupportedServices().size()
+    );
+
+    Set<Long> ids = new HashSet<>();
+
+    for (VideoStreaming service :
+            found.getSupportedServices()) {
+
+      ids.add(service.getId());
+    }
+
+    assertTrue(ids.contains(service1.getId()));
+    assertTrue(ids.contains(service2.getId()));
   }
 }
