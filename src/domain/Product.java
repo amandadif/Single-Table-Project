@@ -42,9 +42,6 @@ public abstract class Product {
             ProductType.VideoStreaming, VideoStreaming::builder,
             ProductType.Apparel, Apparel::builder,
             ProductType.Electronics, Electronics::builder
-
-
-            // TODO: append others here as they are built
     );
 
     /**

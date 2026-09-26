@@ -52,8 +52,8 @@ public class DigitalMediaTest {
     assertEquals(AudioCodec.WAV, audioTrack.getSingleCodec());
 
     //Test finding an audiotrack
-    assertEquals(audioTrack.getSku(), gateway.findAndBuild(audioTrack.getId(),VideoStreaming::builder).getSku());
-    assertEquals(audioTrack.getBasePrice(), gateway.findAndBuild(audioTrack.getId(),VideoStreaming::builder).getBasePrice());
+    assertEquals(audioTrack.getSku(), gateway.findAndBuild(audioTrack.getId(), AudioTrack::builder).getSku());
+    assertEquals(audioTrack.getBasePrice(), gateway.findAndBuild(audioTrack.getId(), AudioTrack::builder).getBasePrice());
   }
 
   @Test
