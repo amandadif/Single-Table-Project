@@ -5,6 +5,8 @@ import datasource.ProductGateway;
 import datasource.ProductType;
 
 import java.util.ArrayList;
+import java.util.List;
+import datasource.InvalidArgumentException;
 
 /**
  * completes the six new domain files
@@ -95,6 +97,16 @@ public class Electronics extends PhysicalProduct {
 
   public ArrayList<VideoStreaming> getSupportedServices() {
     return supportedServices;
+  }
+
+  public static List<Electronics> findAllThatSupport(
+          int videoStreamingId)
+          throws DatabaseException, InvalidArgumentException {
+
+    return ProductGateway.findAllThatSupport(
+            videoStreamingId,
+            Electronics::builder
+    );
   }
 
 }

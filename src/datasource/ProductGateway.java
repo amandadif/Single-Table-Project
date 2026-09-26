@@ -258,8 +258,23 @@ public class ProductGateway {
         return basePrice;
     }
 
+    public void setBasePrice(double basePrice) throws DatabaseException {
+        this.basePrice = basePrice;
+        updateColumn("basePrice", basePrice);
+    }
+
     public Set<AudioCodec> getCodecs() {
         return codecs;
+    }
+
+    public void setCodecs(Set<AudioCodec> codecs) throws DatabaseException {
+        this.codecs = codecs;
+
+        if (codecs == null) {
+            updateColumn("codecs", null);
+        } else {
+            updateColumn("codecs", calculateBitmask(codecs));
+        }
     }
 
      public long getId() {
@@ -270,12 +285,27 @@ public class ProductGateway {
         return name;
     }
 
+    public void setName(String name) throws DatabaseException {
+        this.name = name;
+        updateColumn("name", name);
+    }
+
     public long getSize() {
         return size;
     }
 
+    public void setSize(long size) throws DatabaseException {
+        this.size = size;
+        updateColumn("size", size);
+    }
+
     public String getSku() {
         return sku;
+    }
+
+    public void setSku(String sku) throws DatabaseException {
+        this.sku = sku;
+        updateColumn("sku", sku);
     }
 
 
@@ -291,12 +321,46 @@ public class ProductGateway {
         return dimensions.getHeight();
     }
 
+    public void setDimensions(Dimensions dimensions) throws DatabaseException {
+        this.dimensions = dimensions;
+
+        if (dimensions == null) {
+            updateColumn("dimensionWidth", null);
+            updateColumn("dimensionDepth", null);
+            updateColumn("dimensionHeight", null);
+        } else {
+            updateColumn("dimensionWidth", dimensions.getWidth());
+            updateColumn("dimensionDepth", dimensions.getDepth());
+            updateColumn("dimensionHeight", dimensions.getHeight());
+        }
+    }
+
     public ApparelSize getApparelSize() {
         return apparelSize;
     }
 
+    public void setApparelSize(ApparelSize apparelSize) throws DatabaseException {
+        this.apparelSize = apparelSize;
+
+        if (apparelSize == null) {
+            updateColumn("apparelSize", null);
+        } else {
+            updateColumn("apparelSize", apparelSize.ordinal());
+        }
+    }
+
     public Voltage getVoltage() {
         return voltage;
+    }
+
+    public void setVoltage(Voltage voltage) throws DatabaseException {
+        this.voltage = voltage;
+
+        if (voltage == null) {
+            updateColumn("voltage", null);
+        } else {
+            updateColumn("voltage", voltage.ordinal());
+        }
     }
 
     private Set<AudioCodec> getSupportedCodecsSet(int mask) {
@@ -326,6 +390,32 @@ public class ProductGateway {
 
     public AudioCodec getSingleCodec() {
         return singleCodec;
+    }
+
+    public void setSingleCodec(AudioCodec singleCodec) throws DatabaseException {
+        this.singleCodec = singleCodec;
+
+        if (singleCodec == null) {
+            updateColumn("singleCodec", null);
+        } else {
+            updateColumn("singleCodec", singleCodec.ordinal());
+        }
+    }
+
+    private void updateColumn(String column, Object value)
+            throws DatabaseException {
+
+        String sql = "UPDATE products SET " + column + " = ? WHERE id = ?";
+
+        Connection conn = getConnection();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setObject(1, value);
+            pstmt.setLong(2, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
     }
 
 
@@ -468,9 +558,8 @@ public class ProductGateway {
     }
 
     /**
-     * gotta complete VideoStreaming.builder(). The version currently returns null,
-     * so retrieving actual supported services will not work correctly until that method is implemented
-     * @throws DatabaseException
+     * Loads the VideoStreaming services supported by this Electronics product.
+     * @throws DatabaseException if the database query fails
      */
     private void loadSupportedServices()
             throws DatabaseException {
@@ -674,7 +763,17 @@ public class ProductGateway {
         return hasLyrics;
     }
 
+    public void setHasLyrics(Boolean hasLyrics) throws DatabaseException {
+        this.hasLyrics = hasLyrics;
+        updateColumn("hasLyrics", hasLyrics);
+    }
+
     public Boolean isHasSubtitles() {
         return hasSubtitles;
+    }
+
+    public void setHasSubtitles(Boolean hasSubtitles) throws DatabaseException {
+        this.hasSubtitles = hasSubtitles;
+        updateColumn("hasSubtitles", hasSubtitles);
     }
 }

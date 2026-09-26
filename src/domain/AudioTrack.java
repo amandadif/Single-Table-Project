@@ -3,6 +3,7 @@ package domain;
 import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
+import java.util.List;
 
 public class AudioTrack extends DigitalMedia {
 
@@ -78,7 +79,10 @@ public class AudioTrack extends DigitalMedia {
      * Look at how ProductGateway uses it: it only ever knows a generic T - not any specific type.
      */
     public static AudioTrack builder(ProductGateway gateway) throws DatasourceTypeMismatch{
-        // TODO make sure that the gateway you are given represents an audio track.  If not, throw the exception
+        if (gateway.getType() != ProductType.AudioTrack) {
+            throw new DatasourceTypeMismatch();
+        }
+
       AudioTrack audioTrack = null;
       try {
         audioTrack = new AudioTrack();
@@ -87,5 +91,13 @@ public class AudioTrack extends DigitalMedia {
       }
       audioTrack.getDataOutOfGateway(gateway);
         return audioTrack;
+    }
+
+    public static List<AudioTrack> findTracksWithLyrics()
+            throws DatabaseException {
+
+        return ProductGateway.findTracksWithLyrics(
+                AudioTrack::builder
+        );
     }
 }

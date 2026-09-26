@@ -57,6 +57,24 @@ public abstract class Product {
         return ProductGateway.findAllRows(BUILDERS);
     }
 
+    public static List<Product> findBySkuPrefix(String prefix)
+            throws DatabaseException {
+
+        List<ProductGateway> gateways =
+                ProductGateway.findBySkuPrefix(prefix);
+
+        List<Product> products = new ArrayList<>();
+
+        for (ProductGateway gateway : gateways) {
+            Function<ProductGateway, ? extends Product> builder =
+                    BUILDERS.get(gateway.getType());
+
+            products.add(builder.apply(gateway));
+        }
+
+        return products;
+    }
+
     protected void getDataOutOfGateway(ProductGateway gateway)
     {
         this.id = gateway.getId();

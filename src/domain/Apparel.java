@@ -3,6 +3,7 @@ package domain;
 import datasource.DatabaseException;
 import datasource.ProductGateway;
 import datasource.ProductType;
+import java.util.List;
 
 /**
  * The constructor creates a ProductGateway, which inserts the shirt into the database.
@@ -71,6 +72,15 @@ public class Apparel extends PhysicalProduct {
     apparel.getDataOutOfGateway(gateway);
 
     return apparel;
+  }
+
+  public static List<Apparel> findApparelWithSize(ApparelSize size)
+          throws DatabaseException {
+
+    return ProductGateway.findApparelWithSize(
+            size.ordinal(),
+            Apparel::builder
+    );
   }
 
   @Override

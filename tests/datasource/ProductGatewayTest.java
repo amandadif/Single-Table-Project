@@ -141,7 +141,7 @@ public class ProductGatewayTest {
         new AudioTrack("ABC5432","Song 2",6,1,false,AudioCodec.values()[0]);
         new AudioTrack("XYZ001","Song 3",7,1,true,AudioCodec.values()[0]);
         //conn.commit();
-        List<?> results = ProductGateway.findBySkuPrefix("ABC");
+        List<Product> results = Product.findBySkuPrefix("ABC");
         assertEquals(2, results.size());
     }
 
@@ -151,7 +151,7 @@ public class ProductGatewayTest {
 
         new AudioTrack("ABC12345","Song",5,1,true,AudioCodec.values()[0]);
 
-        List<?> results =ProductGateway.findBySkuPrefix("ZZZ");
+        List<Product> results = Product.findBySkuPrefix("ZZZ");
 
         assertTrue(results.isEmpty());
     }
@@ -168,7 +168,7 @@ public class ProductGatewayTest {
         AudioTrack withLyrics = new AudioTrack("LYRICS","Has Lyrics",5,1,true,AudioCodec.values()[0]);
         AudioTrack withoutLyrics = new AudioTrack("NOLYRICS","No Lyrics",5,1,false,AudioCodec.values()[0]);
 
-        List<AudioTrack> results = ProductGateway.findTracksWithLyrics(AudioTrack::builder);
+        List<AudioTrack> results = AudioTrack.findTracksWithLyrics();
 
         assertEquals(1, results.size());
         assertEquals(withLyrics.getId(),results.get(0).getId());
@@ -183,7 +183,7 @@ public class ProductGatewayTest {
         new AudioTrack("NOLYRICS1","Song 1",5,1,false,AudioCodec.values()[0]);
         new AudioTrack("NOLYRICS2","Song 2",5,1,false,AudioCodec.values()[0]);
 
-        List<AudioTrack> results = ProductGateway.findTracksWithLyrics(AudioTrack::builder);
+        List<AudioTrack> results = AudioTrack.findTracksWithLyrics();
 
         assertTrue(results.isEmpty());
     }
@@ -205,7 +205,7 @@ public class ProductGatewayTest {
 
         new Apparel("NOMATCH","Other Shirt",20,new Dimensions(4, 5, 6),otherSize);
 
-        List<Apparel> results = ProductGateway.findApparelWithSize(wantedSize.ordinal(),Apparel::builder);
+        List<Apparel> results = Apparel.findApparelWithSize(wantedSize);
 
         assertEquals(1, results.size());
         assertEquals(matching.getId(),results.get(0).getId());
@@ -244,10 +244,45 @@ public class ProductGatewayTest {
         new Electronics("NON-SUPPORTING-ELEC","Other TV",500,new Dimensions(4, 5, 6),Voltage.V_220,
                 null);
 
-        List<Electronics> results =ProductGateway.findAllThatSupport((int) service.getId(),Electronics::builder);
+        List<Electronics> results = Electronics.findAllThatSupport((int) service.getId());
 
         assertEquals(1, results.size());
         assertEquals(supportingElectronics.getId(),results.get(0).getId());
+    }
+
+    @Test
+    void electronicsSupportedServicesRoundTrip() throws Exception {
+
+        VideoStreaming service = new VideoStreaming(
+                "ROUNDTRIP-SERVICE",
+                "Test Streaming Service",
+                10,
+                1000,
+                true,
+                Set.of(AudioCodec.MP3)
+        );
+
+        ArrayList<VideoStreaming> services = new ArrayList<>();
+        services.add(service);
+
+        Electronics original = new Electronics(
+                "ROUNDTRIP-TV",
+                "Test TV",
+                500,
+                new Dimensions(10, 20, 30),
+                Voltage.V_110,
+                services
+        );
+
+        Electronics found =
+                Electronics.findElectronics(original.getId());
+
+        assertEquals(1, found.getSupportedServices().size());
+
+        assertEquals(
+                service.getId(),
+                found.getSupportedServices().get(0).getId()
+        );
     }
 
 
@@ -267,7 +302,7 @@ public class ProductGatewayTest {
         Electronics electronics2 =new Electronics("ELECB","TV B",600,new Dimensions(4, 5, 6),
                 Voltage.V_220, services);
 
-        List<Electronics> results = ProductGateway.findAllThatSupport((int) service.getId(),Electronics::builder);
+        List<Electronics> results = Electronics.findAllThatSupport((int) service.getId());
 
         assertEquals(2, results.size());
 
@@ -287,7 +322,7 @@ public class ProductGatewayTest {
         VideoStreaming service = new VideoStreaming("UNSUPPORTEDSERVICE", "Unused Service", 10, 1000, true, Set.of(AudioCodec.values()[0]));
         new Electronics("NOSERVICE", "TV", 500, new Dimensions(1, 2, 3), Voltage.V_110, null);
 
-        List<Electronics> results = ProductGateway.findAllThatSupport((int) service.getId(), Electronics::builder);
+        List<Electronics> results = Electronics.findAllThatSupport((int) service.getId());
 
         assertTrue(results.isEmpty());
     }
@@ -296,11 +331,14 @@ public class ProductGatewayTest {
     void findAllThatSupportRejectsNonVideoStreamingId() throws Exception {
         AudioTrack track = new AudioTrack("INVALIDSERVICEID", "Not A Service", 5, 1, true, AudioCodec.values()[0]);
 
-        assertThrows(InvalidArgumentException.class, () -> ProductGateway.findAllThatSupport((int) track.getId(), Electronics::builder));
+        assertThrows(
+                InvalidArgumentException.class, () -> Electronics.findAllThatSupport((int) track.getId()));
     }
 
     @Test
     void findAllThatSupportRejectsNonexistentId() throws Exception {
-        assertThrows(InvalidArgumentException.class, () -> ProductGateway.findAllThatSupport(999999999, Electronics::builder));
+
+        assertThrows(InvalidArgumentException.class, () -> Electronics.findAllThatSupport(999999999));
     }
+
 }

@@ -87,6 +87,10 @@ public class VideoStreaming extends DigitalMedia { // Or a component/subclass
      * @return
      */
     public static VideoStreaming builder(ProductGateway productGateway) {
+        if (productGateway.getType() != ProductType.VideoStreaming) {
+            throw new DatasourceTypeMismatch();
+        }
+
         VideoStreaming videoStreaming = null;
         try {
             videoStreaming = new VideoStreaming();
