@@ -18,7 +18,6 @@ public class ProductGateway {
     private AudioCodec singleCodec = null;
     private Set<AudioCodec> codecs = null;
     private Boolean hasSubtitles;
-    private int videoResolution;
     private ArrayList<VideoStreaming> supportedStreamingServices;
     private Dimensions dimensions;
     private ApparelSize apparelSize;
@@ -382,10 +381,6 @@ public class ProductGateway {
 
     public ProductType getType() {
         return type;
-    }
-
-    public int getVideoResolution() {
-        return videoResolution;
     }
 
     public AudioCodec getSingleCodec() {
